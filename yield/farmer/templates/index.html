@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interact with Smart Contract</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
+    <script src="https://unpkg.com/@metamask/detect-provider/dist/detect-provider.min.js"></script>
+</head>
+<body>
+    <h1>Interact with Smart Contract</h1>
+    <button id="connect-button">Connect MetaMask</button>
+    <br><br>
+    <label for="product">Product:</label>
+    <input type="text" id="product" name="product">
+    <label for="quantity">Quantity:</label>
+    <input type="number" id="quantity" name="quantity">
+    <button id="store-button">Store Product Quantity</button>
+
+    <script type="text/javascript">
+        const contractAddress = "0x706125446b2680Ba5BcabA43017d2aAAf8260e87";  // Replace with your deployed contract address
+        const contractABI = [
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "product",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "quantity",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ProductStored",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "products",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "name": "quantities",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "product",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "quantity",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "store",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        async function loadWeb3() {
+            const provider = await detectEthereumProvider();
+            if (provider) {
+                console.log('Ethereum provider detected');
+                window.web3 = new Web3(provider);
+                return true;
+            } else {
+                console.error('Please install MetaMask!');
+                return false;
+            }
+        }
+
+        async function connectMetaMask() {
+            if (await loadWeb3()) {
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    console.log('MetaMask connected');
+                } catch (error) {
+                    console.error('User rejected the request');
+                }
+            }
+        }
+
+        async function storeProductQuantity() {
+            const product = document.getElementById("product").value;
+            const quantity = parseInt(document.getElementById("quantity").value);
+
+            if (!product || !quantity) {
+                alert("Please enter both product and quantity");
+                return;
+            }
+
+            const accounts = await web3.eth.getAccounts();
+            const account = accounts[0];
+            const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+            contract.methods.store(product, quantity).send({ from: account })
+                .on('transactionHash', function(hash){
+                    console.log('Transaction hash:', hash);
+                })
+                .on('receipt', function(receipt){
+                    console.log('Receipt:', receipt);
+                })
+                .on('error', function(error, receipt) {
+                    console.error('Error:', error);
+                });
+        }
+
+        document.getElementById("connect-button").onclick = connectMetaMask;
+        document.getElementById("store-button").onclick = storeProductQuantity;
+    </script>
+</body>
+</html>
